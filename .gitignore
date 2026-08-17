@@ -1,0 +1,30 @@
+.env*
+!.env.example
+.venv/
+web/node_modules/
+web/.vite/
+web/*.tsbuildinfo
+web/vite.config.js
+web/vite.config.d.ts
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.log
+*.pem
+*.key
+credentials/
+secrets/
+
+# Keep private operational data out of source control. Only placeholders and
+# the explicitly sanitized demonstration SOP are published.
+data/*
+!data/.gitkeep
+documents/*
+!documents/.gitkeep
+!documents/example_safety_sop.md
+outputs/*
+!outputs/.gitkeep
+validation/results/*
+!validation/results/.gitkeep
+backups/

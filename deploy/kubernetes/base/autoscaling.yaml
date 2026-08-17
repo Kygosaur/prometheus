@@ -1,0 +1,13 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: {name: planning-api}
+spec:
+  scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: planning-api}
+  minReplicas: 2
+  maxReplicas: 10
+  metrics: [{type: Resource, resource: {name: cpu, target: {type: Utilization, averageUtilization: 65}}}]
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: {name: planning-api}
+spec: {minAvailable: 1, selector: {matchLabels: {app: planning-api}}}

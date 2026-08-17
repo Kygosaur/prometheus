@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: planning-config}
+data:
+  ENVIRONMENT: production
+  AUTH_ENABLED: "true"
+  REDIS_URL: redis://redis:6379/0
+  LOCAL_LLM_BASE_URL: http://ollama:11434/v1
+  LOCAL_LLM_MODEL: planning-kimi
+  ALLOWED_LLM_HOSTS: ollama
+  PLANNING_WORKSPACE: /app/documents
+  PLANNING_WORKBOOK: /app/data/planning.xlsx
+  ORTOOLS_SEARCH_WORKERS: "4"
+  RETRIEVAL_CPU_THREADS: "2"
+---
+apiVersion: v1
+kind: Secret
+metadata: {name: planning-secrets}
+type: Opaque
+stringData:
+  APP_SECRET_KEY: REPLACE_ME_WITH_32_PLUS_RANDOM_CHARACTERS
+  POSTGRES_PASSWORD: REPLACE_ME
+  DATABASE_URL: postgresql+psycopg://planning:REPLACE_ME@postgres:5432/planning
+  BOOTSTRAP_ADMIN_USERNAME: admin
+  BOOTSTRAP_ADMIN_PASSWORD: REPLACE_ME_WITH_12_PLUS_CHARACTERS
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {name: planning-files}
+spec:
+  accessModes: [ReadWriteMany]
+  resources: {requests: {storage: 20Gi}}

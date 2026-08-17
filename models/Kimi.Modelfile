@@ -1,0 +1,8 @@
+FROM richardyoung/kimi-vl-a3b-thinking:Q5_K_M
+
+# Keep the KV cache within a stable budget for a 16 GB GPU. The application
+# retrieves only the most relevant excerpts, so 8K is sufficient for this use.
+PARAMETER num_ctx 8192
+PARAMETER num_predict 2048
+PARAMETER temperature 0.2
+

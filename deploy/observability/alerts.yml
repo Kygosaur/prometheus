@@ -1,0 +1,13 @@
+groups:
+  - name: planning
+    rules:
+      - alert: PlanningApiDown
+        expr: up{job="planning-api"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: "Planning API is unavailable"}
+      - alert: HighApiLatency
+        expr: histogram_quantile(0.95, sum(rate(planning_http_request_duration_seconds_bucket[5m])) by (le)) > 10
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "Planning API p95 latency exceeds 10 seconds"}

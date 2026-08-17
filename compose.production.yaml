@@ -1,0 +1,74 @@
+name: prometheus-planning
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    env_file: ${ENV_FILE:-.env.production}
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"], interval: 10s, timeout: 5s, retries: 10}
+    networks: [backend]
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "512mb", "--maxmemory-policy", "noeviction"]
+    volumes: [redis_data:/data]
+    healthcheck: {test: ["CMD", "redis-cli", "ping"], interval: 10s, timeout: 3s, retries: 10}
+    networks: [backend]
+  migrate:
+    build: .
+    env_file: ${ENV_FILE:-.env.production}
+    command: ["alembic", "upgrade", "head"]
+    depends_on: {postgres: {condition: service_healthy}}
+    networks: [backend]
+  api:
+    build: .
+    restart: unless-stopped
+    env_file: ${ENV_FILE:-.env.production}
+    volumes: [./data:/app/data:ro, ./documents:/app/documents:ro, ./outputs:/app/outputs]
+    depends_on: {postgres: {condition: service_healthy}, redis: {condition: service_healthy}, migrate: {condition: service_completed_successfully}}
+    deploy: {resources: {limits: {cpus: "4.0", memory: 8G}, reservations: {cpus: "1.0", memory: 1G}}}
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    networks: [frontend, backend]
+  worker:
+    build: .
+    restart: unless-stopped
+    env_file: ${ENV_FILE:-.env.production}
+    command: ["rq", "worker", "--url", "redis://redis:6379/0", "planning"]
+    volumes: [./data:/app/data:ro, ./documents:/app/documents:ro, ./outputs:/app/outputs]
+    depends_on: {postgres: {condition: service_healthy}, redis: {condition: service_healthy}, migrate: {condition: service_completed_successfully}}
+    deploy: {resources: {limits: {cpus: "4.0", memory: 8G}, reservations: {cpus: "1.0", memory: 1G}}}
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    networks: [backend]
+  proxy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    volumes: [./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro, caddy_data:/data, caddy_config:/config]
+    depends_on: [api]
+    networks: [frontend]
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    restart: unless-stopped
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=15d"]
+    volumes: [./deploy/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro, ./deploy/observability/alerts.yml:/etc/prometheus/alerts.yml:ro, prometheus_data:/prometheus]
+    networks: [backend]
+  grafana:
+    image: grafana/grafana:12.1.0
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-change-before-production}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes: [grafana_data:/var/lib/grafana, ./deploy/observability/grafana-datasources.yml:/etc/grafana/provisioning/datasources/default.yml:ro]
+    ports: ["127.0.0.1:3000:3000"]
+    networks: [backend]
+networks:
+  frontend: {}
+  backend: {internal: true}
+volumes:
+  postgres_data: {}
+  redis_data: {}
+  caddy_data: {}
+  caddy_config: {}
+  prometheus_data: {}
+  grafana_data: {}

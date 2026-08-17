@@ -1,0 +1,17 @@
+services:
+  planner:
+    build:
+      context: .
+    image: industrial-planning-agent:local
+    network_mode: none
+    volumes:
+      - ./data:/app/data
+      - ./documents:/app/documents:ro
+      - ./outputs:/app/outputs
+    command:
+      - schedule
+      - --workbook
+      - /app/data/planning.xlsx
+      - --no-llm
+      - --output
+      - /app/outputs/schedule.json

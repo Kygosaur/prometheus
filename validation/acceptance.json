@@ -1,0 +1,11 @@
+{
+  "unit_test_failures": 0,
+  "health_p95_ms": 250,
+  "simple_chat_p95_seconds": 10,
+  "planning_p95_seconds": 60,
+  "http_error_rate_max": 0.01,
+  "scheduler_feasible_rate_min": 1.0,
+  "rag_recall_at_5_min": 0.8,
+  "gpu_vram_utilization_max": 0.85,
+  "approval_required": true
+}
